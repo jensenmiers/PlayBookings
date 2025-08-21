@@ -80,7 +80,7 @@ SELECT
     CASE WHEN b.venue_id = '660e8400-e29b-41d4-a716-446655440001' THEN 1000000.00 ELSE 500000.00 END,
     '2024-01-01',
     '2024-12-31',
-    CASE WHEN b.status = 'confirmed' THEN 'approved' ELSE 'pending' END
+    CASE WHEN b.status = 'confirmed' THEN 'approved'::insurance_status ELSE 'pending'::insurance_status END
 FROM public.bookings b
 WHERE b.renter_id IN ('550e8400-e29b-41d4-a716-446655440003', '550e8400-e29b-41d4-a716-446655440004');
 
