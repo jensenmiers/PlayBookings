@@ -1,4 +1,4 @@
--- Fix for booking availability check to handle bookings that span multiple slots
+-- A fix for booking availability check to handle bookings that span multiple slots
 -- Run this in Supabase SQL editor to update the existing functions
 
 -- Update the check_booking_conflicts function to handle span-multiple-slots bookings
