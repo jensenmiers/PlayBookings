@@ -1,6 +1,6 @@
 # PlayBookings.com
 
-A web-based facility rental marketplace for streamlining the rental of underutilized middle school sports facilities. Connect trusted renters with available indoor basketball courts.
+A web-based facility rental marketplace for streamlining the rental of underutilized sports facilities. Connect trusted renters with available indoor basketball courts and fields.
 
 ## 🚀 Features
 
