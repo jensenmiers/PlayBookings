@@ -72,6 +72,20 @@ describe('BrandConceptRoute', () => {
     expect(metadata.robots).toEqual({ index: false, follow: false })
   })
 
+  it('keeps the sticky review header out of an overflow-hidden ancestor', async () => {
+    const result = await BrandConceptRoute({
+      params: Promise.resolve({ concept: '2' }),
+    })
+
+    const { container } = render(result)
+    const page = container.querySelector('main')
+    const reviewHeader = container.querySelector('header')
+
+    expect(page).toHaveClass('overflow-x-clip')
+    expect(page).not.toHaveClass('overflow-hidden')
+    expect(reviewHeader).toHaveClass('sticky', 'top-0')
+  })
+
   it('returns not found for any route outside concepts 1 through 3', async () => {
     await expect(
       BrandConceptRoute({

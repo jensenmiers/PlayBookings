@@ -363,7 +363,7 @@ export function BrandConceptPreview({ concept }: { concept: BrandConceptId }) {
   const theme = BRAND_CONCEPTS[concept]
 
   return (
-    <main className={cn('min-h-screen overflow-hidden', theme.page)}>
+    <main className={cn('min-h-screen overflow-x-clip', theme.page)}>
       <header
         className={cn(
           'sticky top-0 z-50 border-b backdrop-blur-xl',
