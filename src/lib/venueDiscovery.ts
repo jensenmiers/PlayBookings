@@ -1,4 +1,4 @@
-import type { BookingMode } from '@/types'
+import type { BookingMode, SlotActionType, SlotPaymentMethod, SlotPricing, SlotPricingUnit } from '@/types'
 import { formatCompactNextAvailable } from '@/lib/nextAvailableDisplay'
 import { deriveVenuePhotos, type VenueWithOptionalMediaFields } from '@/lib/venueMedia'
 
@@ -19,8 +19,8 @@ export interface MapVenue {
   offersOpenGym: boolean
   offersPrivateRental: boolean
   dropInPrice: number | null
-  latitude: number | null
-  longitude: number | null
+  latitude: number
+  longitude: number
   distanceMiles: number | null
   venueType: string
   photo: string | null
@@ -32,6 +32,8 @@ export interface NextAvailableSlot {
   date: string
   startTime: string
   endTime: string
+  actionType: SlotActionType
+  pricing: SlotPricing | null
   displayText: string
 }
 
@@ -49,13 +51,18 @@ export interface VenueDiscoveryRpcRow {
   offers_open_gym?: boolean | null
   offers_private_rental?: boolean | null
   drop_in_price?: number | null
-  latitude: number | null
-  longitude: number | null
+  latitude: number
+  longitude: number
   distance_miles: number | null
   next_slot_id: string | null
   next_slot_date: string | null
   next_slot_start_time: string | null
   next_slot_end_time: string | null
+  next_slot_action_type: SlotActionType | null
+  next_slot_price_amount_cents?: number | null
+  next_slot_price_currency?: string | null
+  next_slot_price_unit?: SlotPricingUnit | null
+  next_slot_payment_method?: SlotPaymentMethod | null
 }
 
 export type VenueDiscoveryEnrichmentRow = VenueWithOptionalMediaFields & {
@@ -76,15 +83,23 @@ export function buildMapVenuesFromDiscovery(
   return (rpcRows || []).map((row) => {
     const enrichment = enrichmentById.get(row.venue_id)
     const photos = enrichment ? deriveVenuePhotos(enrichment) : []
+    const nextSlotPricing =
+      row.next_slot_price_amount_cents != null
+      && row.next_slot_price_currency
+      && row.next_slot_price_unit
+      && row.next_slot_payment_method
+        ? {
+            amount_cents: Number(row.next_slot_price_amount_cents),
+            currency: row.next_slot_price_currency,
+            unit: row.next_slot_price_unit,
+            payment_method: row.next_slot_payment_method,
+          } satisfies SlotPricing
+        : null
 
     const dropInPrice =
       row.drop_in_price == null || row.drop_in_price === undefined
         ? null
         : Number(row.drop_in_price)
-    const latitude =
-      row.latitude == null || row.latitude === undefined ? null : Number(row.latitude)
-    const longitude =
-      row.longitude == null || row.longitude === undefined ? null : Number(row.longitude)
 
     return {
       id: row.venue_id,
@@ -99,18 +114,23 @@ export function buildMapVenuesFromDiscovery(
       offersOpenGym: Boolean(row.offers_open_gym),
       offersPrivateRental: row.offers_private_rental !== false,
       dropInPrice: Number.isFinite(dropInPrice as number) ? dropInPrice : null,
-      latitude: Number.isFinite(latitude as number) ? latitude : null,
-      longitude: Number.isFinite(longitude as number) ? longitude : null,
+      latitude: Number(row.latitude),
+      longitude: Number(row.longitude),
       distanceMiles: row.distance_miles,
       venueType: enrichment?.venue_type?.trim() || DEFAULT_VENUE_TYPE,
       photo: photos[0] || null,
       nextAvailable:
-        row.next_slot_id && row.next_slot_date && row.next_slot_start_time
+        row.next_slot_id
+        && row.next_slot_date
+        && row.next_slot_start_time
+        && row.next_slot_action_type
           ? {
               slotId: row.next_slot_id,
               date: row.next_slot_date,
               startTime: row.next_slot_start_time,
               endTime: row.next_slot_end_time || '',
+              actionType: row.next_slot_action_type,
+              pricing: nextSlotPricing,
               displayText: formatCompactNextAvailable(
                 row.next_slot_date,
                 row.next_slot_start_time

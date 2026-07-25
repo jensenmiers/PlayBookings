@@ -1,8 +1,9 @@
 import { slugify } from '@/lib/utils'
-import type { MapVenue } from '@/lib/venueDiscovery'
+import type { MapVenue, NextAvailableSlot } from '@/lib/venueDiscovery'
 import type { Venue } from '@/types'
 import { deriveVenuePhotos } from '@/lib/venueMedia'
 import { formatCompactNextAvailable } from '@/lib/nextAvailableDisplay'
+import { formatDiscoveryPrice, isOpenGymDiscovery } from '@/lib/discoveryPresentation'
 import { formatVenueCardPriceLine } from '@/lib/venueAccess'
 
 export interface FeaturedCourt {
@@ -11,6 +12,7 @@ export interface FeaturedCourt {
   type: string
   hourlyRate: number
   priceLabel: string
+  isOpenGym: boolean
   nextAvailable: string
   image: string | null
   href: string
@@ -39,10 +41,14 @@ function normalizeVenueName(name: string): string {
 
 function mapVenueToFeaturedCourt(
   venue: Venue,
-  nextSlot: { date: string; startTime: string } | undefined,
+  nextSlot: NextAvailableSlot | undefined,
   fallbackAvailabilityLabel: string
 ): FeaturedCourt & { sortTime: number } {
-  const priceLabel = formatVenueCardPriceLine(venue)
+  const isOpenGym = isOpenGymDiscovery(nextSlot || null)
+  const accessPrice = formatVenueCardPriceLine(venue)
+  const priceLabel = isOpenGym
+    ? formatDiscoveryPrice(nextSlot || null, venue.hourly_rate)
+    : accessPrice
 
   return {
     id: venue.id,
@@ -50,6 +56,7 @@ function mapVenueToFeaturedCourt(
     type: venue.venue_type || 'Sports Facility',
     hourlyRate: venue.hourly_rate,
     priceLabel,
+    isOpenGym,
     nextAvailable: nextSlot
       ? formatCompactNextAvailable(nextSlot.date, nextSlot.startTime)
       : fallbackAvailabilityLabel,
@@ -66,6 +73,7 @@ function stripSortTime(court: FeaturedCourt & { sortTime: number }): FeaturedCou
     type: court.type,
     hourlyRate: court.hourlyRate,
     priceLabel: court.priceLabel,
+    isOpenGym: court.isOpenGym,
     nextAvailable: court.nextAvailable,
     image: court.image,
     href: court.href,
@@ -75,9 +83,10 @@ function stripSortTime(court: FeaturedCourt & { sortTime: number }): FeaturedCou
 /**
  * Build featured courts for the homepage.
  *
- * Preferred pins are resolved from the active venue catalog (`venues`).
- * Discovery may still omit preferred venues when availability enrichment is
- * missing, so preferred names must come from `useVenues` (or equivalent).
+ * Preferred pins are resolved from the active venue catalog (`venues`), not the
+ * discovery list. Discovery (`get_venues_with_next_available`) omits active
+ * venues without a geocoded `location`, so preferred names must come from
+ * `useVenues` (or equivalent) to avoid disappearing after discovery-only refactors.
  */
 export function buildFeaturedCourts(
   venues: Venue[],
@@ -85,17 +94,14 @@ export function buildFeaturedCourts(
   limit: number,
   options: BuildFeaturedCourtsOptions = {}
 ): FeaturedCourt[] {
-  const nextByVenue = new Map<string, { date: string; startTime: string }>()
+  const nextByVenue = new Map<string, NextAvailableSlot>()
   const fallbackAvailabilityLabel = options.fallbackAvailabilityLabel || 'by request'
 
   for (const venue of availabilityVenues) {
     if (!venue.nextAvailable) {
       continue
     }
-    nextByVenue.set(venue.id, {
-      date: venue.nextAvailable.date,
-      startTime: venue.nextAvailable.startTime,
-    })
+    nextByVenue.set(venue.id, venue.nextAvailable)
   }
 
   const dynamicCourts = venues

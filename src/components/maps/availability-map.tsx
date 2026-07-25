@@ -6,6 +6,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faLocationDot, faBolt, faClock } from '@fortawesome/free-solid-svg-icons'
 import { Button } from '@/components/ui/button'
 import type { MapVenue } from '@/hooks/useVenuesWithNextAvailable'
+import { formatDiscoveryPrice, isOpenGymDiscovery } from '@/lib/discoveryPresentation'
 import Link from 'next/link'
 import { slugify } from '@/lib/utils'
 
@@ -46,20 +47,12 @@ export function AvailabilityMap({
 
   const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN
 
-  const mappableVenues = useMemo(
-    () =>
-      venues.filter(
-        (venue) => Number.isFinite(venue.latitude) && Number.isFinite(venue.longitude)
-      ),
-    [venues]
-  )
-
-  // Calculate bounds to fit geocoded venues only
+  // Calculate bounds to fit all venues
   const bounds = useMemo(() => {
-    if (mappableVenues.length === 0) return null
+    if (venues.length === 0) return null
     
-    const lats = mappableVenues.map(v => v.latitude as number)
-    const lngs = mappableVenues.map(v => v.longitude as number)
+    const lats = venues.map(v => v.latitude)
+    const lngs = venues.map(v => v.longitude)
     
     return {
       minLat: Math.min(...lats),
@@ -67,11 +60,11 @@ export function AvailabilityMap({
       minLng: Math.min(...lngs),
       maxLng: Math.max(...lngs),
     }
-  }, [mappableVenues])
+  }, [venues])
 
   // Set initial view based on venues
   useMemo(() => {
-    if (bounds && mappableVenues.length > 0) {
+    if (bounds && venues.length > 0) {
       const centerLat = (bounds.minLat + bounds.maxLat) / 2
       const centerLng = (bounds.minLng + bounds.maxLng) / 2
       
@@ -94,7 +87,7 @@ export function AvailabilityMap({
         zoom,
       })
     }
-  }, [bounds, mappableVenues.length])
+  }, [bounds, venues.length])
 
   const handleMarkerClick = useCallback((venue: MapVenue) => {
     setPopupVenue(venue)
@@ -132,8 +125,8 @@ export function AvailabilityMap({
       >
         <NavigationControl position="top-right" />
 
-        {/* Venue Markers — ungeocoded venues remain in list count but cannot be pinned */}
-        {mappableVenues.map((venue) => {
+        {/* Venue Markers */}
+        {venues.map((venue) => {
           const isSelected = selectedVenueId === venue.id || popupVenue?.id === venue.id
           const hasAvailability = venue.nextAvailable !== null
           const markerZIndex = isSelected ? 3 : hasAvailability ? 2 : 1
@@ -141,8 +134,8 @@ export function AvailabilityMap({
           return (
             <Marker
               key={venue.id}
-              latitude={venue.latitude as number}
-              longitude={venue.longitude as number}
+              latitude={venue.latitude}
+              longitude={venue.longitude}
               anchor="bottom"
               style={{ zIndex: markerZIndex }}
               onClick={(e) => {
@@ -159,12 +152,10 @@ export function AvailabilityMap({
         })}
 
         {/* Popup for selected venue */}
-        {popupVenue
-          && Number.isFinite(popupVenue.latitude)
-          && Number.isFinite(popupVenue.longitude) && (
+        {popupVenue && (
           <Popup
-            latitude={popupVenue.latitude as number}
-            longitude={popupVenue.longitude as number}
+            latitude={popupVenue.latitude}
+            longitude={popupVenue.longitude}
             anchor="bottom"
             onClose={handlePopupClose}
             closeOnClick={false}
@@ -240,6 +231,8 @@ function VenueMarker({ venue, isSelected }: { venue: MapVenue; isSelected: boole
  */
 function VenuePopupContent({ venue }: { venue: MapVenue }) {
   const venueSlug = slugify(venue.name)
+  const isOpenGym = isOpenGymDiscovery(venue.nextAvailable)
+  const priceLabel = formatDiscoveryPrice(venue.nextAvailable, venue.hourlyRate)
 
   return (
     <div className="p-xs min-w-[220px]">
@@ -248,10 +241,10 @@ function VenuePopupContent({ venue }: { venue: MapVenue }) {
         <h3 className="font-semibold text-secondary-900 text-sm leading-tight">
           {venue.name}
         </h3>
-        {venue.instantBooking && (
+        {(isOpenGym || venue.instantBooking) && (
           <span className="flex items-center gap-xs bg-accent-400/15 text-accent-400 text-xs px-s py-xxs rounded-full flex-shrink-0">
             <FontAwesomeIcon icon={faBolt} className="text-[10px]" />
-            <span>Instant</span>
+            <span>{isOpenGym ? 'Open Gym' : 'Instant'}</span>
           </span>
         )}
       </div>
@@ -281,11 +274,11 @@ function VenuePopupContent({ venue }: { venue: MapVenue }) {
       {/* Price and CTA */}
       <div className="flex items-center justify-between gap-s">
         <span className="text-secondary-900 font-semibold">
-          ${venue.hourlyRate}<span className="text-xs font-normal text-secondary-600">/hr</span>
+          {priceLabel}
         </span>
         <Button asChild size="sm" className="rounded-lg text-xs px-m py-xs h-7">
           <Link href={`/venue/${venueSlug}`}>
-            View & Book
+            {isOpenGym ? 'View details' : 'View & Book'}
           </Link>
         </Button>
       </div>

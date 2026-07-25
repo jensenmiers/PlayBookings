@@ -55,6 +55,8 @@ const mockVenue = {
     date: '2026-02-20',
     startTime: '18:00:00',
     endTime: '19:00:00',
+    actionType: 'instant_book' as const,
+    pricing: null,
     displayText: 'Fri Feb 20, 6 PM',
   },
 }
@@ -75,6 +77,8 @@ const mockVenueTwo = {
     date: '2026-02-20',
     startTime: '20:00:00',
     endTime: '21:00:00',
+    actionType: 'instant_book' as const,
+    pricing: null,
     displayText: 'Fri Feb 20, 8 PM',
   },
 }
@@ -159,21 +163,30 @@ describe('AvailabilityMap popup readability', () => {
     expect(unselectedAvailableMarker).toHaveStyle({ zIndex: 2 })
   })
 
-  it('lists ungeocoded venues in the count but does not render map markers for them', () => {
-    const ungeocodedVenue = {
+  it('shows open-gym type, per-person price, and details action in the popup', () => {
+    const openGymVenue = {
       ...mockVenue,
-      id: 'venue-ungeocoded',
-      name: 'Ungeocoded Open Gym',
-      latitude: null as number | null,
-      longitude: null as number | null,
-      nextAvailable: null,
-      offersOpenGym: true,
+      name: 'Memorial Park',
+      hourlyRate: 75,
+      instantBooking: false,
+      nextAvailable: {
+        ...mockVenue.nextAvailable,
+        actionType: 'info_only_open_gym' as const,
+        pricing: {
+          amount_cents: 300,
+          currency: 'USD',
+          unit: 'person' as const,
+          payment_method: 'on_site' as const,
+        },
+      },
     }
 
-    render(<AvailabilityMap venues={[mockVenue, ungeocodedVenue]} />)
+    render(<AvailabilityMap venues={[openGymVenue]} />)
+    fireEvent.click(screen.getByTestId('mock-marker'))
 
-    expect(screen.getByText('2 venues')).toBeInTheDocument()
-    expect(screen.getAllByTestId('mock-marker')).toHaveLength(1)
-    expect(screen.queryByText('Ungeocoded Open Gym')).not.toBeInTheDocument()
+    expect(screen.getByText('Open Gym')).toBeInTheDocument()
+    expect(screen.getByText('$3/person')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /view details/i })).toHaveAttribute('href', '/venue/memorial-park')
+    expect(screen.queryByText('Instant')).not.toBeInTheDocument()
   })
 })
