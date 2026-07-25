@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { format } from 'date-fns'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -27,6 +28,7 @@ import { getBookingModeDisplay } from '@/lib/booking-mode'
 import {
   formatVenueCardPriceLine,
   matchesAccessFilter,
+  parseVenueAccessFilter,
   resolveVenueAccess,
   type VenueAccessFilter,
 } from '@/lib/venueAccess'
@@ -50,6 +52,9 @@ function parseLocalDate(dateStr: string): Date {
  * Mobile: Toggle between map and list views
  */
 export function SplitAvailabilityView() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const searchParamAccess = parseVenueAccessFilter(searchParams.get('access') || 'all')
   const todayKey = getDateStringInTimeZone(new Date(), PLATFORM_TIME_ZONE)
   const todayDate = parseLocalDate(todayKey)
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
@@ -60,7 +65,11 @@ export function SplitAvailabilityView() {
   const [visibleResultCount, setVisibleResultCount] = useState(RESULTS_PAGE_SIZE)
   const dateButtonRef = useRef<HTMLButtonElement>(null)
   const [datePickerPosition, setDatePickerPosition] = useState<{ left: number; top: number } | null>(null)
-  const [accessFilter, setAccessFilter] = useState<VenueAccessFilter>('all')
+  const [accessFilter, setAccessFilter] = useState<VenueAccessFilter>(searchParamAccess)
+
+  useEffect(() => {
+    setAccessFilter(searchParamAccess)
+  }, [searchParamAccess])
 
   const updateDatePickerPosition = useCallback(() => {
     const button = dateButtonRef.current
@@ -142,6 +151,18 @@ export function SplitAvailabilityView() {
   const visibleVenues = venuesWithAvailability.slice(0, visibleResultCount)
   const selectedDateObject = selectedDate ? parseLocalDate(selectedDate) : undefined
 
+  const handleAccessChange = (value: VenueAccessFilter) => {
+    setAccessFilter(value)
+    const nextParams = new URLSearchParams(searchParams.toString())
+    if (value === 'all') {
+      nextParams.delete('access')
+    } else {
+      nextParams.set('access', value)
+    }
+    const query = nextParams.toString()
+    router.push(query ? `/search?${query}` : '/search', { scroll: false })
+  }
+
   useEffect(() => {
     setVisibleResultCount(RESULTS_PAGE_SIZE)
   }, [selectedDate, searchQuery, accessFilter])
@@ -187,7 +208,7 @@ export function SplitAvailabilityView() {
         </div>
 
         <div className="mb-m">
-          <VenueAccessSegment value={accessFilter} onChange={setAccessFilter} />
+          <VenueAccessSegment value={accessFilter} onChange={handleAccessChange} />
         </div>
 
         {/* Filter Row */}
@@ -361,11 +382,11 @@ export function SplitAvailabilityView() {
             {/* Results Header */}
             <div className="mb-l">
               <h2 className="text-lg font-semibold text-secondary-50">
-                Available Slots
+                {accessFilter === 'open_gym' ? 'Open Gym Venues' : 'Available Slots'}
               </h2>
               <p className="text-sm text-secondary-50/60">
-                {loading 
-                  ? 'Loading...' 
+                {loading
+                  ? 'Loading...'
                   : accessFilter === 'open_gym'
                     ? `${venuesWithAvailability.length} Open Gym venue${venuesWithAvailability.length !== 1 ? 's' : ''}`
                     : `${venuesWithAvailability.length} venue${venuesWithAvailability.length !== 1 ? 's' : ''} with availability`
