@@ -30,7 +30,9 @@ jest.mock('next/link', () => ({
 
 jest.mock('next/image', () => ({
   __esModule: true,
-  default: ({ alt }: { alt: string }) => <div aria-label={alt} />,
+  default: ({ alt, src }: { alt: string; src: string }) => (
+    <div role="img" aria-label={alt} data-src={src} />
+  ),
 }))
 
 jest.mock('next/navigation', () => ({
@@ -71,7 +73,10 @@ describe('Navigation', () => {
 
     const homeLink = screen.getByRole('link', { name: 'Play Bookings home' })
     expect(homeLink).toHaveAttribute('href', '/')
-    expect(screen.getByLabelText('Play Bookings')).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: 'Play Bookings' })).toHaveAttribute(
+      'data-src',
+      '/play_bookings_logo_white.png'
+    )
   })
 
   it('applies active pill styling to Next Availability when pathname is /search', () => {

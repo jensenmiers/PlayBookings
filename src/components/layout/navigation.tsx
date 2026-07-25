@@ -91,7 +91,7 @@ export function Navigation() {
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-10">
         <Link href="/" className="inline-flex items-center" aria-label="Play Bookings home">
           <Image
-            src="/play_bookings_logo.svg"
+            src="/play_bookings_logo_white.png"
             alt="Play Bookings"
             width={195}
             height={36}
