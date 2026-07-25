@@ -3,7 +3,7 @@ import Link from 'next/link'
 
 import { cn } from '@/lib/utils'
 
-export const BRAND_CONCEPT_IDS = ['1', '2', '3'] as const
+export const BRAND_CONCEPT_IDS = ['1', '2', '3', '4'] as const
 
 export type BrandConceptId = (typeof BRAND_CONCEPT_IDS)[number]
 
@@ -205,6 +205,57 @@ export const BRAND_CONCEPTS: Record<BrandConceptId, ConceptTheme> = {
       { label: 'Primary', className: 'bg-[#FF671A]', role: 'Brand + CTA' },
       { label: 'Signal', className: 'bg-primary-400', role: 'Available + success' },
       { label: 'Canvas', className: 'bg-secondary-50', role: 'Clean marketplace' },
+    ],
+  },
+  '4': {
+    id: '4',
+    name: 'New foundation, familiar signals',
+    shortName: 'Familiar',
+    thesis:
+      'Adopt the purchased navy as the structural foundation while preserving PlayBookings’ existing warm orange, bright green, and warm neutral system.',
+    signatureCopy: 'A sharper frame. The same PlayBookings instincts.',
+    allocation: 'Kit navy for structure · Existing orange for warmth · Existing green for action',
+    page: 'bg-[#1F2937] text-secondary-50',
+    chrome: 'bg-[#1F2937]/90',
+    chromeBorder: 'border-secondary-50/10',
+    logoText: 'text-secondary-50',
+    reviewPill: 'border-accent-400/30 bg-accent-400/10 text-accent-300',
+    switcher: 'border-secondary-50/10 bg-secondary-800/80',
+    switcherActive: 'bg-accent-400 text-[#1F2937]',
+    switcherInactive: 'text-secondary-50/55 hover:text-secondary-50',
+    eyebrow: 'text-accent-300',
+    headlineAccent: 'text-accent-400',
+    heroCopy: 'text-secondary-50/68',
+    heroCta: 'bg-primary-400 text-[#1F2937] hover:bg-primary-300',
+    heroCtaNote: 'text-secondary-50/48',
+    heroFrame: 'border-secondary-50/10 bg-secondary-800',
+    heroOverlay:
+      'bg-gradient-to-tr from-[#1F2937] via-[#1F2937]/35 to-accent-400/15',
+    heroBadge: 'border-secondary-50/15 bg-[#1F2937]/80 text-secondary-50',
+    heroBadgeDot: 'bg-primary-400',
+    rule: 'from-accent-600 via-accent-400 to-primary-400',
+    sectionLabel: 'text-accent-300',
+    sectionCopy: 'text-secondary-50/58',
+    filterShell: 'border-secondary-50/10 bg-secondary-800',
+    filterActive: 'bg-accent-400 text-[#1F2937]',
+    filterInactive: 'text-secondary-50/58 hover:bg-secondary-700 hover:text-secondary-50',
+    card: 'bg-secondary-800',
+    cardBorder: 'border-secondary-50/10 hover:border-accent-400/45',
+    cardCopy: 'text-secondary-50/58',
+    privatePill: 'border-primary-300/25 bg-primary-400/10 text-primary-300',
+    openGymPill: 'border-accent-400/30 bg-accent-400/10 text-accent-300',
+    availability: 'text-primary-400',
+    cardAction: 'text-secondary-50 hover:text-accent-300',
+    bookingPanel: 'border-secondary-50/10 bg-secondary-800',
+    bookingMuted: 'text-secondary-50/48',
+    bookingTime: 'border-primary-300/25 bg-primary-400/10 text-primary-300',
+    bookingCta: 'bg-primary-400 text-[#1F2937] hover:bg-primary-300',
+    thesisPanel: 'border-accent-400/20 bg-secondary-800/80',
+    thesisMuted: 'text-secondary-50/58',
+    swatches: [
+      { label: 'Foundation', className: 'bg-[#1F2937]', role: 'New kit navy' },
+      { label: 'Warmth', className: 'bg-accent-400', role: 'Existing PlayBookings orange' },
+      { label: 'Action', className: 'bg-primary-400', role: 'Existing booking green' },
     ],
   },
 }

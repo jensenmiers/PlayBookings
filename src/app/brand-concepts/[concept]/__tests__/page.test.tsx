@@ -19,11 +19,12 @@ describe('BrandConceptRoute', () => {
     jest.clearAllMocks()
   })
 
-  it('prebuilds exactly the three review concepts', () => {
+  it('prebuilds exactly the four review concepts', () => {
     expect(generateStaticParams()).toEqual([
       { concept: '1' },
       { concept: '2' },
       { concept: '3' },
+      { concept: '4' },
     ])
   })
 
@@ -31,6 +32,7 @@ describe('BrandConceptRoute', () => {
     ['1', /tune, don.t rebrand/i, /green still closes the booking/i],
     ['2', /two-speed brand/i, /orange gets attention/i],
     ['3', /orange-first relaunch/i, /play louder/i],
+    ['4', /new foundation, familiar signals/i, /sharper frame/i],
   ])(
     'renders concept %s with shared comparison controls',
     async (concept, heading, signatureCopy) => {
@@ -56,6 +58,10 @@ describe('BrandConceptRoute', () => {
       expect(screen.getByRole('link', { name: /concept 3/i })).toHaveAttribute(
         'href',
         '/brand-concepts/3'
+      )
+      expect(screen.getByRole('link', { name: /concept 4/i })).toHaveAttribute(
+        'href',
+        '/brand-concepts/4'
       )
       expect(screen.getByRole('heading', { name: /courts near you/i, level: 2 })).toBeInTheDocument()
       expect(screen.getAllByText(/private rental/i).length).toBeGreaterThan(0)
@@ -86,10 +92,10 @@ describe('BrandConceptRoute', () => {
     expect(reviewHeader).toHaveClass('sticky', 'top-0')
   })
 
-  it('returns not found for any route outside concepts 1 through 3', async () => {
+  it('returns not found for any route outside concepts 1 through 4', async () => {
     await expect(
       BrandConceptRoute({
-        params: Promise.resolve({ concept: '4' }),
+        params: Promise.resolve({ concept: '5' }),
       })
     ).rejects.toThrow('NEXT_NOT_FOUND')
 
