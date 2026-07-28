@@ -46,8 +46,9 @@ It is intentionally not a column-by-column reference.
 
 ### Slot Pricing
 
-- `pricing_rules`: reusable per-venue/per-action pricing definitions.
-- `slot_instance_pricing`: per-instance pricing snapshots written during slot materialization.
+- `venues.hourly_rate`: single standard hourly rate for private rentals on every day.
+- `pricing_rules`: offering-specific pricing definitions restricted to informational open-gym sessions.
+- `slot_instance_pricing`: per-instance open-gym pricing snapshots written during slot materialization.
 
 ### Venue Policy and Operations
 
@@ -80,8 +81,9 @@ It is intentionally not a column-by-column reference.
    - Admin edits also enqueue zero-delay long-horizon refresh (`enqueue_drop_in_template_sync`, `enqueue_regular_template_sync`) for 180-day coverage.
    - Long-horizon queue draining is handled by the Supabase cron job `availability_backfill_worker_every_5_minutes`.
 4. Slot pricing is normalized and snapshotted:
-   - Templates can reference `pricing_rules`.
-   - Generated instances receive `slot_instance_pricing` snapshots for runtime reads.
+   - Private rentals always display and charge `venues.hourly_rate`, regardless of day or slot.
+   - Informational open-gym templates can reference `pricing_rules`.
+   - Generated open-gym instances receive `slot_instance_pricing` snapshots for runtime reads.
 5. `venues.max_advance_booking_days` remains present for legacy compatibility, but policy enforcement now prioritizes admin config minimum-advance controls.
 6. External calendar blocking baseline is now present:
    - `external_availability_blocks` overlays slot reads and booking-create conflict checks.

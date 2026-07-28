@@ -90,7 +90,6 @@ describe('generateMetadata', () => {
       latitude: 34.1,
       longitude: -118.33,
       hourly_rate: 75,
-      weekend_rate: null,
       primary_photo_url: 'https://example.com/hero.jpg',
     })
 

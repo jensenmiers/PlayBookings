@@ -278,10 +278,7 @@ export class AvailabilityService {
     const enabledInfoSlots = adminConfig.drop_in_enabled ? infoSlots : []
     const modalContentRows = (modalContentResult.data || []) as SlotModalContentRow[]
 
-    const pricingSlotIds = [
-      ...regularAvailableSlots.map((slot) => slot.slot_id),
-      ...enabledInfoSlots.map((slot) => slot.id),
-    ]
+    const pricingSlotIds = enabledInfoSlots.map((slot) => slot.id)
     const pricingBySlotId = new Map<string, SlotPricing>()
     if (pricingSlotIds.length > 0) {
       const { data: pricingRows, error: pricingError } = await captureQuery(
@@ -329,7 +326,7 @@ export class AvailabilityService {
       slot_instance_id: slot.slot_id,
       action_type: slot.action_type,
       modal_content: null,
-      slot_pricing: pricingBySlotId.get(slot.slot_id) || null,
+      slot_pricing: null,
     }))
 
     const dropInSlotPricing = adminConfig.drop_in_price

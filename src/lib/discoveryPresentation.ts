@@ -14,7 +14,7 @@ export function formatDiscoveryPrice(
   nextAvailable: NextAvailableSlot | null,
   hourlyRate: number
 ): string {
-  if (nextAvailable?.pricing) {
+  if (isOpenGymDiscovery(nextAvailable) && nextAvailable?.pricing) {
     const { amount_cents: amountCents, currency, unit } = nextAvailable.pricing
     const amount = new Intl.NumberFormat('en-US', {
       style: 'currency',

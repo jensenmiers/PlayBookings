@@ -665,6 +665,33 @@ describe('VenueDesignEditorial coming-up pills', () => {
     expect(within(bookingCard).queryByText('$75/hr')).not.toBeInTheDocument()
   })
 
+  it('ignores instance pricing for private rental slots', () => {
+    mockUseVenueAvailabilityRange.mockReturnValue({
+      data: [
+        {
+          date: '2026-02-21',
+          start_time: '12:00:00',
+          end_time: '13:00:00',
+          venue_id: 'venue-1',
+          action_type: 'instant_book',
+          slot_pricing: {
+            amount_cents: 12500,
+            currency: 'USD',
+            unit: 'hour',
+            payment_method: 'in_app',
+          },
+        },
+      ],
+      loading: false,
+      error: null,
+    })
+
+    render(<VenueDesignEditorial venue={createMockVenue()} />)
+
+    expect(screen.getAllByText('$75/hr').length).toBeGreaterThan(0)
+    expect(screen.queryByText('$125/hr')).not.toBeInTheDocument()
+  })
+
   it('renders a venue map section near the bottom of the page', () => {
     mockUseVenueAvailabilityRange.mockReturnValue({
       data: [],
@@ -689,7 +716,6 @@ describe('VenueDesignEditorial coming-up pills', () => {
       <VenueDesignEditorial
         venue={createMockVenue({
           booking_mode: 'approval_slots',
-          weekend_rate: 95,
           insurance_required: true,
           max_advance_booking_days: 45,
         })}
@@ -697,8 +723,9 @@ describe('VenueDesignEditorial coming-up pills', () => {
     )
 
     expect(screen.getByRole('heading', { name: 'Good to know' })).toBeInTheDocument()
-    expect(screen.getByText('$75/hr weekdays')).toBeInTheDocument()
-    expect(screen.getByText('$95/hr weekends')).toBeInTheDocument()
+    expect(screen.getByText('$75/hr')).toBeInTheDocument()
+    expect(screen.getByText('Standard hourly rate')).toBeInTheDocument()
+    expect(screen.queryByText(/weekdays|weekends/i)).not.toBeInTheDocument()
     expect(screen.getAllByText('Host Approval').length).toBeGreaterThan(0)
     expect(screen.getByText('Book future dates')).toBeInTheDocument()
     expect(screen.getByText('Availability updates by date')).toBeInTheDocument()

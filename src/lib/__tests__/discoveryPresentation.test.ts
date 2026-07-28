@@ -26,7 +26,7 @@ describe('discoveryPresentation', () => {
     }))).toBe(false)
   })
 
-  it('uses instance pricing for rental discovery when present', () => {
+  it('ignores instance pricing for rental discovery', () => {
     expect(formatDiscoveryPrice(
       createNextAvailable({
         actionType: 'instant_book',
@@ -38,7 +38,7 @@ describe('discoveryPresentation', () => {
         },
       }),
       75
-    )).toBe('$150/hr')
+    )).toBe('$75/hr')
   })
 
   it('falls back to venue hourly rate for rentals without instance pricing', () => {
