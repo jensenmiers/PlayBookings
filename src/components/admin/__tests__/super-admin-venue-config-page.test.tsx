@@ -558,10 +558,10 @@ describe('SuperAdminVenueConfigPage', () => {
   it.skip('renders super-admin sections in the configured order', async () => {
     render(<SuperAdminVenueConfigPage />)
 
-    await screen.findByRole('heading', { name: 'Normal Booking Price', level: 3 })
+    await screen.findByRole('heading', { name: 'Private Rental Hourly Rate', level: 3 })
 
     const headingsInOrder = [
-      'Normal Booking Price',
+      'Private Rental Hourly Rate',
       'Booking Mode',
       'Advance Booking Rules',
       'Amenities Checklist',

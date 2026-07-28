@@ -54,7 +54,6 @@ export interface Venue {
   longitude?: number
   owner_id: string
   hourly_rate: number
-  weekend_rate?: number // Optional rate for weekend bookings (Sat/Sun)
   instant_booking: boolean
   booking_mode?: BookingMode | null
   insurance_required: boolean
@@ -315,7 +314,6 @@ export interface CreateVenueForm {
   latitude?: number
   longitude?: number
   hourly_rate: number
-  weekend_rate?: number
   instant_booking: boolean
   booking_mode?: BookingMode
   insurance_required: boolean

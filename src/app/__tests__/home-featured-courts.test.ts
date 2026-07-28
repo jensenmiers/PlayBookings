@@ -14,7 +14,6 @@ function createVenue(overrides: Partial<Venue> = {}): Venue {
     zip_code: '90404',
     owner_id: 'owner-1',
     hourly_rate: 75,
-    weekend_rate: 95,
     instant_booking: false,
     insurance_required: false,
     max_advance_booking_days: 30,

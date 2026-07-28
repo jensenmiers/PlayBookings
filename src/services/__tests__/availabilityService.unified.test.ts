@@ -586,7 +586,7 @@ describe('AvailabilityService (template-only slots)', () => {
     }
   })
 
-  it('applies slot_instance_pricing to regular and open-gym slots', async () => {
+  it('applies slot_instance_pricing only to open-gym slots', async () => {
     jest.useFakeTimers()
     jest.setSystemTime(new Date('2026-02-22T10:00:00.000-08:00'))
 
@@ -700,12 +700,7 @@ describe('AvailabilityService (template-only slots)', () => {
           slot_instance_id: 'slot-regular',
           action_type: 'instant_book',
           modal_content: null,
-          slot_pricing: {
-            amount_cents: 12500,
-            currency: 'USD',
-            unit: 'hour',
-            payment_method: 'in_app',
-          },
+          slot_pricing: null,
         },
       ])
       expect(from).toHaveBeenCalledWith('slot_instance_pricing')

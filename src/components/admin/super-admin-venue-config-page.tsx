@@ -2009,8 +2009,8 @@ export function SuperAdminVenueConfigPage() {
 
                 <SectionGroup title="Pricing & Booking Settings">
                   <ConfigRow
-                    title="Normal Booking Price"
-                    description="Flat rate for standard private booking sessions."
+                    title="Private Rental Hourly Rate"
+                    description="Standard hourly rate for private rentals on every day."
                   >
                     <Input
                       type="number"

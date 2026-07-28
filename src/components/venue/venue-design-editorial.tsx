@@ -48,7 +48,7 @@ function formatCurrencyFromCents(amountCents: number, currency: string): string 
 }
 
 function getSlotPricingLabel(slot: ComputedAvailabilitySlot, venue: Venue): string {
-  if (slot.slot_pricing) {
+  if (slot.action_type === 'info_only_open_gym' && slot.slot_pricing) {
     const unitSuffixMap = {
       hour: '/hr',
       person: '/person',
@@ -171,14 +171,13 @@ export function VenueDesignEditorial({
 
   const nextSlot = bookableSlots[0]
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
-  const hasDistinctWeekendRate = Boolean(venue.weekend_rate && venue.weekend_rate !== venue.hourly_rate)
   const fullBookingModeDisplay = getBookingModeDisplay(venue, 'full')
   const planningFact = buildVenuePlanningFact({ bookingMode, policy: venueAdminConfig })
   const venueQuickFacts = [
     {
       label: 'Rate',
-      value: hasDistinctWeekendRate ? `$${venue.hourly_rate}/hr weekdays` : `$${venue.hourly_rate}/hr`,
-      detail: hasDistinctWeekendRate ? `$${venue.weekend_rate}/hr weekends` : 'Standard hourly rate',
+      value: `$${venue.hourly_rate}/hr`,
+      detail: 'Standard hourly rate',
       icon: faDollarSign,
     },
     {
