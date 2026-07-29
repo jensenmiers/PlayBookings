@@ -177,6 +177,31 @@ describe('Stripe Webhook Handler', () => {
     expect(mockProcessPaymentSuccess).toHaveBeenCalledWith('pi_checkout_456', 'cs_session_456')
   })
 
+  it('returns 500 when successful-payment processing fails so Stripe retries', async () => {
+    const fakeEvent = {
+      type: 'payment_intent.succeeded',
+      data: {
+        object: {
+          id: 'pi_retry_123',
+          metadata: { booking_id: 'booking-123' },
+        },
+      },
+    }
+
+    mockConstructEvent.mockReturnValue(fakeEvent)
+    mockProcessPaymentSuccess.mockRejectedValue(new Error('Resend unavailable'))
+
+    const request = createRequest('{}', { 'stripe-signature': 'valid_sig' })
+    const response = await POST(request)
+    const data = await response.json() as { received: boolean; error: string }
+
+    expect(response.status).toBe(500)
+    expect(data).toEqual({
+      received: false,
+      error: 'Webhook processing failed',
+    })
+  })
+
   it('should handle charge.refunded event', async () => {
     const fakeEvent = {
       type: 'charge.refunded',

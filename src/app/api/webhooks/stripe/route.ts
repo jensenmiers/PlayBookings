@@ -105,8 +105,11 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error'
     console.error(`Error processing webhook: ${message}`)
-    // Return 200 to prevent Stripe from retrying (we've logged the error)
-    // In production, you might want to return 500 for certain recoverable errors
-    return Response.json({ received: true, error: message })
+    // Successful-payment work is idempotent. A non-2xx response lets Stripe
+    // retry transient database and confirmation-email failures.
+    return Response.json(
+      { received: false, error: 'Webhook processing failed' },
+      { status: 500 }
+    )
   }
 }

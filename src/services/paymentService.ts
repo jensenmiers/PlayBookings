@@ -9,6 +9,7 @@ import { createClient } from '@/lib/supabase/server'
 import { resolveVenueBookingMode } from '@/lib/booking-mode'
 import { badRequest, notFound } from '@/utils/errorHandling'
 import type { Booking, Venue, Payment } from '@/types'
+import { BookingConfirmationEmailService } from '@/services/bookingConfirmationEmailService'
 
 export interface CheckoutSessionResult {
   url: string
@@ -45,6 +46,7 @@ export interface CapturePaymentResult {
 export class PaymentService {
   private paymentRepo = new PaymentRepository()
   private bookingRepo = new BookingRepository()
+  private bookingConfirmationEmailService = new BookingConfirmationEmailService()
 
   private async getVenueOrThrow(
     supabase: Awaited<ReturnType<typeof createClient>>,
@@ -471,6 +473,14 @@ export class PaymentService {
         status: 'confirmed',
       })
 
+      try {
+        await this.bookingConfirmationEmailService.sendIfNeeded(bookingId)
+      } catch (error) {
+        // Stripe also emits payment_intent.succeeded and will retry the tracked
+        // notification without changing the successful capture result.
+        console.error('Booking confirmation email failed after payment capture', error)
+      }
+
       return {
         paymentId: updatedPayment.id,
         paymentIntentId: paymentIntent.id,
@@ -547,6 +557,7 @@ export class PaymentService {
     // Check idempotency - already processed
     if (payment.status === 'paid') {
       const booking = await this.bookingRepo.findById(payment.booking_id)
+      await this.bookingConfirmationEmailService.sendIfNeeded(payment.booking_id)
       return { payment, booking: booking! }
     }
 
@@ -561,6 +572,8 @@ export class PaymentService {
     const booking = await this.bookingRepo.update(payment.booking_id, {
       status: 'confirmed',
     })
+
+    await this.bookingConfirmationEmailService.sendIfNeeded(payment.booking_id)
 
     return { payment: updatedPayment, booking }
   }
