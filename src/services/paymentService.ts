@@ -443,10 +443,18 @@ export class PaymentService {
       throw badRequest('No payment method found for this setup intent')
     }
 
-    // Fetch booking for metadata
+    // Fetch booking for metadata and terminal-state checks
     const booking = await this.bookingRepo.findById(bookingId)
     if (!booking) {
       throw notFound('Booking not found')
+    }
+
+    if (booking.status === 'cancelled') {
+      throw badRequest('Cannot capture payment for a cancelled booking')
+    }
+
+    if (booking.status === 'completed') {
+      throw badRequest('Cannot capture payment for a completed booking')
     }
 
     // Create and confirm a PaymentIntent using the saved payment method
@@ -472,17 +480,26 @@ export class PaymentService {
         paid_at: new Date().toISOString(),
       })
 
-      // Update booking status to confirmed
-      await this.bookingRepo.update(bookingId, {
-        status: 'confirmed',
-      })
+      // Re-read so a mid-flight cancel is not resurrected.
+      const existingBooking = await this.bookingRepo.findById(bookingId)
+      if (!existingBooking) {
+        throw notFound('Booking not found')
+      }
 
-      try {
-        await this.bookingConfirmationEmailService.sendIfNeeded(bookingId)
-      } catch (error) {
-        // Stripe also emits payment_intent.succeeded and will retry the tracked
-        // notification without changing the successful capture result.
-        console.error('Booking confirmation email failed after payment capture', error)
+      const reconciledBooking = existingBooking.status === 'pending'
+        ? await this.bookingRepo.update(bookingId, {
+            status: 'confirmed',
+          })
+        : existingBooking
+
+      if (reconciledBooking.status === 'confirmed') {
+        try {
+          await this.bookingConfirmationEmailService.sendIfNeeded(bookingId)
+        } catch (error) {
+          // Stripe also emits payment_intent.succeeded and will retry the tracked
+          // notification without changing the successful capture result.
+          console.error('Booking confirmation email failed after payment capture', error)
+        }
       }
 
       return {

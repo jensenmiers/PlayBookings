@@ -473,6 +473,66 @@ describe('PaymentService - SetupIntent Flow', () => {
       consoleError.mockRestore()
     })
 
+    it('does not charge, re-confirm, or email a cancelled booking', async () => {
+      const payment = createPayment({
+        status: 'authorized',
+        stripe_setup_intent_id: 'seti_123',
+        amount: 100,
+      })
+      const cancelledBooking = createBooking({ status: 'cancelled' })
+
+      mockPaymentRepo.findByBookingId = jest.fn().mockResolvedValue(payment)
+      mockBookingRepo.findById = jest.fn().mockResolvedValue(cancelledBooking)
+      mockBookingRepo.update = jest.fn()
+      ;(stripe.setupIntents.retrieve as jest.Mock).mockResolvedValue({
+        payment_method: 'pm_123',
+      })
+
+      await expect(
+        paymentService.capturePayment('booking-123', 'owner-123')
+      ).rejects.toThrow('Cannot capture payment for a cancelled booking')
+
+      expect(stripe.paymentIntents.create).not.toHaveBeenCalled()
+      expect(mockPaymentRepo.update).not.toHaveBeenCalled()
+      expect(mockBookingRepo.update).not.toHaveBeenCalled()
+      expect(mockBookingConfirmationEmailService.sendIfNeeded).not.toHaveBeenCalled()
+    })
+
+    it('does not re-confirm or email when booking becomes cancelled during capture', async () => {
+      const payment = createPayment({
+        status: 'authorized',
+        stripe_setup_intent_id: 'seti_123',
+        amount: 100,
+      })
+      const pendingBooking = createBooking({ status: 'pending' })
+      const cancelledBooking = createBooking({ status: 'cancelled' })
+
+      mockPaymentRepo.findByBookingId = jest.fn().mockResolvedValue(payment)
+      mockPaymentRepo.update = jest.fn().mockResolvedValue({ ...payment, status: 'paid' })
+      mockBookingRepo.findById = jest
+        .fn()
+        .mockResolvedValueOnce(pendingBooking)
+        .mockResolvedValueOnce(cancelledBooking)
+      mockBookingRepo.update = jest.fn()
+      ;(stripe.setupIntents.retrieve as jest.Mock).mockResolvedValue({
+        payment_method: 'pm_123',
+      })
+      ;(stripe.paymentIntents.create as jest.Mock).mockResolvedValue({
+        id: 'pi_123',
+        status: 'succeeded',
+      })
+
+      const result = await paymentService.capturePayment('booking-123', 'owner-123')
+
+      expect(result).toMatchObject({ status: 'paid', paymentIntentId: 'pi_123' })
+      expect(mockPaymentRepo.update).toHaveBeenCalledWith(
+        'payment-123',
+        expect.objectContaining({ status: 'paid' })
+      )
+      expect(mockBookingRepo.update).not.toHaveBeenCalled()
+      expect(mockBookingConfirmationEmailService.sendIfNeeded).not.toHaveBeenCalled()
+    })
+
     it('should throw NotFoundError for missing payment', async () => {
       mockPaymentRepo.findByBookingId = jest.fn().mockResolvedValue(null)
 
