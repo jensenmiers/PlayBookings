@@ -97,7 +97,7 @@ describe('VenueCard', () => {
   })
 
   it('displays venue name, location, and hourly rate', () => {
-    render(
+    const { container } = render(
       <VenueCard
         venue={createVenue({
           name: 'Test Court',
@@ -110,8 +110,50 @@ describe('VenueCard', () => {
 
     expect(screen.getByText('Test Court')).toBeInTheDocument()
     expect(screen.getByText('Los Angeles, CA')).toBeInTheDocument()
-    expect(screen.getByText('$75/hr')).toBeInTheDocument()
+    const price = screen.getByText('$75/hr')
+    const photo = container.querySelector('[data-slot="venue-card-photo"]')
+    const content = container.querySelector('[data-slot="venue-card-content"]')
+
+    expect(photo).toContainElement(price)
+    expect(content).not.toContainElement(price)
+    expect(price).toHaveClass(
+      'bg-secondary-900/75',
+      'backdrop-blur-md',
+      'bottom-l',
+      'right-l'
+    )
     expect(screen.getByText('Private Rental')).toBeInTheDocument()
+  })
+
+  it('uses legible top-left photo overlays for venue access', () => {
+    const { container } = render(
+      <VenueCard
+        venue={createVenue({
+          offers_open_gym: true,
+          offers_private_rental: true,
+        })}
+      />
+    )
+
+    const chipGroup = container.querySelector('[data-slot="venue-access-chips"]')
+    const openGymChip = screen.getByText('Open Gym')
+    const privateRentalChip = screen.getByText('Private Rental')
+
+    expect(chipGroup).toHaveClass('left-l', 'top-l', 'justify-start')
+    expect(openGymChip).toHaveClass(
+      'bg-secondary-900/75',
+      'backdrop-blur-md',
+      'uppercase',
+      'tracking-[0.16em]',
+      'text-accent-300'
+    )
+    expect(privateRentalChip).toHaveClass(
+      'bg-secondary-900/75',
+      'backdrop-blur-md',
+      'uppercase',
+      'tracking-[0.16em]',
+      'text-primary-300'
+    )
   })
 
   it('shows dual pricing and access chips for hybrid venues', () => {
@@ -252,6 +294,23 @@ describe('VenueCard', () => {
     render(<VenueCard venue={createVenue({ photos: ['/photo1.jpg'] })} />)
 
     expect(screen.getByRole('img', { name: 'Test Court' })).toBeInTheDocument()
+  })
+
+  it('keeps multi-photo indicators clear of the non-interactive price overlay', () => {
+    render(
+      <VenueCard
+        venue={createVenue({
+          photos: ['/photo1.jpg', '/photo2.jpg', '/photo3.jpg'],
+        })}
+      />
+    )
+
+    const dots = screen.getByTestId('carousel-dots')
+    const price = screen.getByText('$75/hr')
+
+    expect(dots).toHaveClass('bottom-l', 'left-l')
+    expect(dots).not.toHaveClass('left-1/2', '-translate-x-1/2')
+    expect(price).toHaveClass('pointer-events-none')
   })
 
   it('prefers ordered venue media over stale legacy photos', () => {

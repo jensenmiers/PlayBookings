@@ -53,7 +53,7 @@ The token chain is:
 Current direction:
 
 - Dark-first semantic defaults.
-- Green primary palette, warm neutral secondary palette, warm orange accent palette.
+- Green primary palette, warm neutral secondary palette, and the `#FF671A` brand-orange accent palette.
 - Shared radius and shadow tokens (`--radius*`, `--shadow-soft`, `--shadow-glass`).
 
 ## Typography System
