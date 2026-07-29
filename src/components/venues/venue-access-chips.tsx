@@ -16,15 +16,19 @@ export function VenueAccessChips({ venue, className }: VenueAccessChipsProps) {
   }
 
   return (
-    <div className={cn('flex flex-wrap gap-xs', className)}>
+    <div
+      data-slot="venue-access-chips"
+      className={cn('flex flex-wrap gap-xs', className)}
+    >
       {labels.map((label) => (
         <span
           key={label}
+          data-slot="venue-access-chip"
           className={cn(
-            'inline-flex items-center rounded-full border px-s py-xs text-xs font-medium',
+            'inline-flex items-center rounded-full border px-m py-xs text-[10px] font-semibold uppercase tracking-[0.16em] backdrop-blur-md',
             label === 'Open Gym'
-              ? 'border-accent-400/30 bg-accent-400/15 text-accent-400'
-              : 'border-primary-400/30 bg-primary-400/10 text-primary-400'
+              ? 'border-accent-400/50 bg-secondary-900/75 text-accent-300'
+              : 'border-primary-400/50 bg-secondary-900/75 text-primary-300'
           )}
         >
           {label}

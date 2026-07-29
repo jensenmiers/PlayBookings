@@ -48,7 +48,10 @@ export function VenueCard({
       className="group block bg-secondary-800 rounded-2xl shadow-soft overflow-hidden hover:-translate-y-1 hover:shadow-glass active:scale-[0.98] transition-all duration-200"
     >
       {/* Photo area */}
-      <div className="relative aspect-[4/3] overflow-hidden">
+      <div
+        data-slot="venue-card-photo"
+        className="relative aspect-[4/3] overflow-hidden"
+      >
         <div className="absolute inset-0 group-hover:scale-105 transition-transform duration-300">
           <PhotoCarousel
             photos={photos}
@@ -59,12 +62,21 @@ export function VenueCard({
 
         <VenueAccessChips
           venue={accessChipVenue}
-          className="absolute right-s top-s z-10 justify-end"
+          className="absolute left-l right-l top-l z-10 justify-start"
         />
+
+        {displayedPrice && (
+          <span
+            data-slot="venue-card-price"
+            className="absolute bottom-l right-l z-10 max-w-3/4 rounded-full bg-secondary-900/75 px-m py-xs text-right text-sm font-semibold leading-tight text-secondary-50 backdrop-blur-md"
+          >
+            {displayedPrice}
+          </span>
+        )}
       </div>
 
       {/* Content area */}
-      <div className="p-m space-y-xs">
+      <div data-slot="venue-card-content" className="p-m space-y-xs">
         <h3 className="font-bold text-secondary-50 line-clamp-1">
           {venue.name}
         </h3>
@@ -82,11 +94,7 @@ export function VenueCard({
           />
         )}
 
-        <div className="flex items-center justify-between gap-s pt-xs">
-          <span className="text-secondary-50 font-semibold text-sm sm:text-base">
-            {displayedPrice}
-          </span>
-
+        <div className="flex min-h-xl items-center justify-end pt-xs">
           {showNextAvailable && nextAvailable && (
             <span className="inline-flex items-center gap-xs bg-primary-100 text-primary-700 text-xs font-medium px-s py-xxs rounded-full shrink-0">
               <FontAwesomeIcon icon={faClock} className="text-[10px]" />
