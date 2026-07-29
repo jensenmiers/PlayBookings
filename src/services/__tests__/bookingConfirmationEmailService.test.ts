@@ -1,5 +1,6 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import {
+  BookingConfirmationEmailDataError,
   BookingConfirmationEmailDeliveryError,
   BookingConfirmationEmailService,
   type BookingConfirmationEmailRecord,
@@ -159,8 +160,8 @@ describe('BookingConfirmationEmailService', () => {
     const resend = createResendClient()
     const service = new BookingConfirmationEmailService({ store, resend, config })
 
-    await expect(service.sendIfNeeded('missing')).rejects.toThrow(
-      'Booking confirmation data not found'
+    await expect(service.sendIfNeeded('missing')).rejects.toBeInstanceOf(
+      BookingConfirmationEmailDataError
     )
     expect(resend.emails.send).not.toHaveBeenCalled()
   })

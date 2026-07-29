@@ -73,6 +73,13 @@ export class BookingConfirmationEmailDeliveryError extends Error {
   }
 }
 
+export class BookingConfirmationEmailDataError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'BookingConfirmationEmailDataError'
+  }
+}
+
 function splitEmailList(value: string | undefined): string[] {
   return (value || '')
     .split(',')
@@ -212,7 +219,9 @@ export class BookingConfirmationEmailService {
     const booking = await this.store.getByBookingId(bookingId)
 
     if (!booking) {
-      throw new Error(`Booking confirmation data not found for ${bookingId}`)
+      throw new BookingConfirmationEmailDataError(
+        `Booking confirmation data not found for ${bookingId}`
+      )
     }
 
     if (booking.confirmationEmailSentAt) {
