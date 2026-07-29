@@ -296,6 +296,23 @@ describe('VenueCard', () => {
     expect(screen.getByRole('img', { name: 'Test Court' })).toBeInTheDocument()
   })
 
+  it('keeps multi-photo indicators clear of the non-interactive price overlay', () => {
+    render(
+      <VenueCard
+        venue={createVenue({
+          photos: ['/photo1.jpg', '/photo2.jpg', '/photo3.jpg'],
+        })}
+      />
+    )
+
+    const dots = screen.getByTestId('carousel-dots')
+    const price = screen.getByText('$75/hr')
+
+    expect(dots).toHaveClass('bottom-l', 'left-l')
+    expect(dots).not.toHaveClass('left-1/2', '-translate-x-1/2')
+    expect(price).toHaveClass('pointer-events-none')
+  })
+
   it('prefers ordered venue media over stale legacy photos', () => {
     render(
       <VenueCard

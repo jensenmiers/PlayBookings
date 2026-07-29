@@ -57,6 +57,7 @@ export function VenueCard({
             photos={photos}
             venueName={venue.name}
             sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            indicatorAlignment="left"
           />
         </div>
 
@@ -68,7 +69,7 @@ export function VenueCard({
         {displayedPrice && (
           <span
             data-slot="venue-card-price"
-            className="absolute bottom-l right-l z-10 max-w-3/4 rounded-full bg-secondary-900/75 px-m py-xs text-right text-sm font-semibold leading-tight text-secondary-50 backdrop-blur-md"
+            className="pointer-events-none absolute bottom-l right-l z-10 max-w-3/4 rounded-full bg-secondary-900/75 px-m py-xs text-right text-sm font-semibold leading-tight text-secondary-50 backdrop-blur-md"
           >
             {displayedPrice}
           </span>
