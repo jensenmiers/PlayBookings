@@ -10,6 +10,7 @@ import { getCancellationInfo, calculateDuration, isPastBookingStart, timeStringT
 import { conflict, badRequest, notFound } from '@/utils/errorHandling'
 import { getBookingPolicyViolation, normalizeVenueAdminConfig } from '@/lib/venueAdminConfig'
 import { resolveVenueBookingMode } from '@/lib/booking-mode'
+import { BookingConfirmationEmailService } from './bookingConfirmationEmailService'
 import type { Booking, RecurringBooking, CreateBookingForm, BookingStatus, BookingWithPaymentInfo, CancellationResult, BookingWithVenue } from '@/types'
 import { createClient } from '@/lib/supabase/server'
 
@@ -93,6 +94,7 @@ export class BookingService {
   private bookingRepo = new BookingRepository()
   private auditService = new AuditService()
   private paymentService = new PaymentService()
+  private bookingConfirmationEmailService = new BookingConfirmationEmailService()
 
   /**
    * Create a new booking with full validation
@@ -522,6 +524,17 @@ export class BookingService {
         booking as unknown as Record<string, unknown>,
         updated as unknown as Record<string, unknown>
       )
+
+      try {
+        await this.bookingConfirmationEmailService.sendIfNeeded(bookingId)
+      } catch (error) {
+        // The booking is already confirmed. Keep the owner action successful;
+        // the empty sent marker preserves the notification for later recovery.
+        console.error(
+          'Booking confirmation email failed after owner confirmation',
+          error
+        )
+      }
       
       return { ...updated, requiresPayment: false }
     }

@@ -34,7 +34,7 @@ It is intentionally not a column-by-column reference.
 
 - `venues`: rentable facility records (location, pricing, listing metadata, booking mode flags).
 - `availability`: retained legacy table for rollback/audit only (runtime booking/discovery no longer depends on it).
-- `bookings`: primary booking records.
+- `bookings`: primary booking records, including nullable Resend acceptance tracking in `confirmation_email_sent_at` and `confirmation_email_resend_id`. Existing confirmed bookings are not backfilled.
 - `recurring_bookings`: expanded recurring instances linked to a parent booking.
 
 ### Slot Engine (Template-Based Scheduling)

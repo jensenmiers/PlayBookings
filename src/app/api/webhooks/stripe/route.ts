@@ -6,6 +6,7 @@
 import { NextRequest } from 'next/server'
 import { stripe } from '@/lib/stripe'
 import { PaymentService } from '@/services/paymentService'
+import { BookingConfirmationEmailDataError } from '@/services/bookingConfirmationEmailService'
 import type Stripe from 'stripe'
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
@@ -104,9 +105,23 @@ export async function POST(request: NextRequest) {
     return Response.json({ received: true })
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error'
+
+    if (error instanceof BookingConfirmationEmailDataError) {
+      // Missing booking/renter/venue data cannot be repaired by Stripe retry.
+      // Acknowledge the event and retain a clear operational log.
+      console.error(`Non-retryable webhook processing error: ${message}`)
+      return Response.json({
+        received: true,
+        error: 'Webhook processing permanently failed',
+      })
+    }
+
     console.error(`Error processing webhook: ${message}`)
-    // Return 200 to prevent Stripe from retrying (we've logged the error)
-    // In production, you might want to return 500 for certain recoverable errors
-    return Response.json({ received: true, error: message })
+    // Successful-payment work is idempotent. A non-2xx response lets Stripe
+    // retry transient database and confirmation-email failures.
+    return Response.json(
+      { received: false, error: 'Webhook processing failed' },
+      { status: 500 }
+    )
   }
 }
