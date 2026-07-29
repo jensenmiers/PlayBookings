@@ -8,6 +8,7 @@ import { stripe } from '@/lib/stripe'
 import { PaymentService } from '@/services/paymentService'
 import { BookingConfirmationEmailDataError } from '@/services/bookingConfirmationEmailService'
 import type Stripe from 'stripe'
+import { getPostHogClient } from '@/lib/posthog-server'
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
 
@@ -57,6 +58,19 @@ export async function POST(request: NextRequest) {
             session.id
           )
           console.log(`Payment processed successfully for session ${session.id}`)
+
+          const posthog = getPostHogClient()
+          posthog.capture({
+            distinctId: session.client_reference_id ?? session.id,
+            event: 'payment_succeeded',
+            properties: {
+              session_id: session.id,
+              payment_intent_id: session.payment_intent,
+              amount_total: session.amount_total,
+              currency: session.currency,
+            },
+          })
+          await posthog.flush()
         }
         break
       }
@@ -80,6 +94,19 @@ export async function POST(request: NextRequest) {
         const paymentIntent = event.data.object as Stripe.PaymentIntent
         console.log(`Payment failed for intent: ${paymentIntent.id}`)
         // Payment stays pending, slot remains held per spec
+
+        const posthog = getPostHogClient()
+        posthog.capture({
+          distinctId: paymentIntent.id,
+          event: 'payment_failed',
+          properties: {
+            payment_intent_id: paymentIntent.id,
+            amount: paymentIntent.amount,
+            currency: paymentIntent.currency,
+            failure_code: paymentIntent.last_payment_error?.code,
+          },
+        })
+        await posthog.flush()
         break
       }
 

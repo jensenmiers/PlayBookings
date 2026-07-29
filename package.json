@@ -59,6 +59,7 @@
     "mapbox-gl": "^3.18.1",
     "next": "^16.2.6",
     "posthog-js": "^1.351.3",
+    "posthog-node": "^5.46.1",
     "react": "19.2.6",
     "react-day-picker": "^9.8.1",
     "react-dom": "19.2.6",

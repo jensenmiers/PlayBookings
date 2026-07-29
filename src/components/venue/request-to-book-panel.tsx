@@ -12,6 +12,7 @@ import { getMinimumAdvanceDate, type VenuePlanningPolicy } from '@/lib/venuePlan
 import { formatTime, getDateStringInTimeZone } from '@/utils/dateHelpers'
 import type { Venue } from '@/types'
 import type { RequestToBookResumeState } from '@/lib/auth/authResume'
+import { usePostHog } from 'posthog-js/react'
 
 type RequestPanelStep = 'form' | 'review' | 'success'
 
@@ -63,6 +64,7 @@ export function RequestToBookPanel({
   const [durationHours, setDurationHours] = useState('1')
   const [notes, setNotes] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const posthog = usePostHog()
   const createBooking = useCreateBooking()
   const { user } = useCurrentUser()
   const { openAuthModal } = useAuthModal()
@@ -157,6 +159,11 @@ export function RequestToBookPanel({
     }
 
     if (result.data) {
+      posthog.capture('booking_request_submitted', {
+        venue_id: venue.id,
+        duration_hours: parsedDuration,
+        estimated_total: estimatedTotal,
+      })
       setError(null)
       setStep('success')
     }
