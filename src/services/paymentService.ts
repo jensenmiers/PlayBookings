@@ -9,7 +9,11 @@ import { createClient } from '@/lib/supabase/server'
 import { resolveVenueBookingMode } from '@/lib/booking-mode'
 import { badRequest, notFound } from '@/utils/errorHandling'
 import type { Booking, Venue, Payment } from '@/types'
-import { BookingConfirmationEmailService } from '@/services/bookingConfirmationEmailService'
+import {
+  BookingConfirmationEmailDataError,
+  BookingConfirmationEmailDeliveryError,
+  BookingConfirmationEmailService,
+} from '@/services/bookingConfirmationEmailService'
 
 export interface CheckoutSessionResult {
   url: string
@@ -554,28 +558,40 @@ export class PaymentService {
       throw notFound('Payment not found for this transaction')
     }
 
-    // Check idempotency - already processed
-    if (payment.status === 'paid') {
-      const booking = await this.bookingRepo.findById(payment.booking_id)
-      await this.bookingConfirmationEmailService.sendIfNeeded(payment.booking_id)
-      return { payment, booking: booking! }
+    const paidPayment = payment.status === 'paid'
+      ? payment
+      : await this.paymentRepo.update(payment.id, {
+          status: 'paid',
+          paid_at: new Date().toISOString(),
+          stripe_payment_intent_id: paymentIntentId,
+        })
+
+    const existingBooking = await this.bookingRepo.findById(payment.booking_id)
+    if (!existingBooking) {
+      throw new BookingConfirmationEmailDataError(
+        `Booking not found for paid payment ${payment.id}`
+      )
     }
 
-    // Update payment status
-    const updatedPayment = await this.paymentRepo.update(payment.id, {
-      status: 'paid',
-      paid_at: new Date().toISOString(),
-      stripe_payment_intent_id: paymentIntentId,
-    })
+    // Reconcile a partial prior attempt without reversing terminal states.
+    const booking = existingBooking.status === 'pending'
+      ? await this.bookingRepo.update(payment.booking_id, {
+          status: 'confirmed',
+        })
+      : existingBooking
 
-    // Update booking status to confirmed
-    const booking = await this.bookingRepo.update(payment.booking_id, {
-      status: 'confirmed',
-    })
+    if (booking.status === 'confirmed') {
+      const emailResult = await this.bookingConfirmationEmailService.sendIfNeeded(
+        payment.booking_id
+      )
+      if (emailResult.status === 'not_confirmed') {
+        throw new BookingConfirmationEmailDeliveryError(
+          `Confirmed booking ${payment.booking_id} was not ready for email delivery`
+        )
+      }
+    }
 
-    await this.bookingConfirmationEmailService.sendIfNeeded(payment.booking_id)
-
-    return { payment: updatedPayment, booking }
+    return { payment: paidPayment, booking }
   }
 
   /**

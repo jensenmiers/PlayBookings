@@ -7,6 +7,7 @@ import { PaymentService } from '../paymentService'
 import { stripe } from '@/lib/stripe'
 import { PaymentRepository } from '@/repositories/paymentRepository'
 import { BookingRepository } from '@/repositories/bookingRepository'
+import { BookingConfirmationEmailDeliveryError } from '@/services/bookingConfirmationEmailService'
 import type { Booking, Payment } from '@/types'
 
 // Mock dependencies
@@ -93,6 +94,9 @@ describe('PaymentService.processPaymentSuccess', () => {
 
     mockPaymentRepo.findByStripePaymentIntentId = jest.fn().mockResolvedValue(payment)
     mockPaymentRepo.update = jest.fn().mockResolvedValue(updatedPayment)
+    mockBookingRepo.findById = jest.fn().mockResolvedValue(
+      createBooking({ status: 'pending' })
+    )
     mockBookingRepo.update = jest.fn().mockResolvedValue(confirmedBooking)
 
     const result = await paymentService.processPaymentSuccess('pi_test_123')
@@ -125,6 +129,9 @@ describe('PaymentService.processPaymentSuccess', () => {
     // Second lookup succeeds
     mockPaymentRepo.findByBookingId = jest.fn().mockResolvedValue(payment)
     mockPaymentRepo.update = jest.fn().mockResolvedValue(updatedPayment)
+    mockBookingRepo.findById = jest.fn().mockResolvedValue(
+      createBooking({ status: 'pending' })
+    )
     mockBookingRepo.update = jest.fn().mockResolvedValue(confirmedBooking)
 
     const result = await paymentService.processPaymentSuccess('pi_unknown', 'cs_session_123')
@@ -141,6 +148,9 @@ describe('PaymentService.processPaymentSuccess', () => {
 
     mockPaymentRepo.findByStripePaymentIntentId = jest.fn().mockResolvedValue(payment)
     mockPaymentRepo.update = jest.fn().mockResolvedValue(updatedPayment)
+    mockBookingRepo.findById = jest.fn().mockResolvedValue(
+      createBooking({ status: 'pending' })
+    )
     mockBookingRepo.update = jest.fn().mockResolvedValue(confirmedBooking)
 
     await paymentService.processPaymentSuccess('pi_test_123')
@@ -166,6 +176,63 @@ describe('PaymentService.processPaymentSuccess', () => {
     expect(mockBookingConfirmationEmailService.sendIfNeeded).toHaveBeenCalledWith('booking-123')
   })
 
+  it('reconciles an already-paid payment whose booking is still pending', async () => {
+    const paidPayment = createPayment({ status: 'paid' })
+    const pendingBooking = createBooking({ status: 'pending' })
+    const confirmedBooking = createBooking({ status: 'confirmed' })
+
+    mockPaymentRepo.findByStripePaymentIntentId = jest.fn().mockResolvedValue(paidPayment)
+    mockBookingRepo.findById = jest.fn().mockResolvedValue(pendingBooking)
+    mockBookingRepo.update = jest.fn().mockResolvedValue(confirmedBooking)
+
+    const result = await paymentService.processPaymentSuccess('pi_test_123')
+
+    expect(result).toEqual({
+      payment: paidPayment,
+      booking: confirmedBooking,
+    })
+    expect(mockBookingRepo.update).toHaveBeenCalledWith('booking-123', {
+      status: 'confirmed',
+    })
+    expect(mockBookingConfirmationEmailService.sendIfNeeded).toHaveBeenCalledWith(
+      'booking-123'
+    )
+  })
+
+  it('does not re-confirm or email a cancelled booking after late payment success', async () => {
+    const payment = createPayment({ status: 'pending' })
+    const paidPayment = createPayment({ status: 'paid' })
+    const cancelledBooking = createBooking({ status: 'cancelled' })
+
+    mockPaymentRepo.findByStripePaymentIntentId = jest.fn().mockResolvedValue(payment)
+    mockPaymentRepo.update = jest.fn().mockResolvedValue(paidPayment)
+    mockBookingRepo.findById = jest.fn().mockResolvedValue(cancelledBooking)
+
+    const result = await paymentService.processPaymentSuccess('pi_test_123')
+
+    expect(result).toEqual({
+      payment: paidPayment,
+      booking: cancelledBooking,
+    })
+    expect(mockBookingRepo.update).not.toHaveBeenCalled()
+    expect(mockBookingConfirmationEmailService.sendIfNeeded).not.toHaveBeenCalled()
+  })
+
+  it('retries when a confirmed booking unexpectedly reads as not confirmed', async () => {
+    const paidPayment = createPayment({ status: 'paid' })
+    const confirmedBooking = createBooking({ status: 'confirmed' })
+
+    mockPaymentRepo.findByStripePaymentIntentId = jest.fn().mockResolvedValue(paidPayment)
+    mockBookingRepo.findById = jest.fn().mockResolvedValue(confirmedBooking)
+    mockBookingConfirmationEmailService.sendIfNeeded.mockResolvedValue({
+      status: 'not_confirmed',
+    })
+
+    await expect(
+      paymentService.processPaymentSuccess('pi_test_123')
+    ).rejects.toBeInstanceOf(BookingConfirmationEmailDeliveryError)
+  })
+
   it('propagates email failure after confirming the paid booking so Stripe can retry', async () => {
     const payment = createPayment({ status: 'pending' })
     const updatedPayment = createPayment({ status: 'paid' })
@@ -173,6 +240,9 @@ describe('PaymentService.processPaymentSuccess', () => {
 
     mockPaymentRepo.findByStripePaymentIntentId = jest.fn().mockResolvedValue(payment)
     mockPaymentRepo.update = jest.fn().mockResolvedValue(updatedPayment)
+    mockBookingRepo.findById = jest.fn().mockResolvedValue(
+      createBooking({ status: 'pending' })
+    )
     mockBookingRepo.update = jest.fn().mockResolvedValue(confirmedBooking)
     mockBookingConfirmationEmailService.sendIfNeeded.mockRejectedValue(
       new Error('Resend unavailable')

@@ -105,15 +105,18 @@ export async function POST(request: NextRequest) {
     return Response.json({ received: true })
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error'
-    console.error(`Error processing webhook: ${message}`)
 
     if (error instanceof BookingConfirmationEmailDataError) {
+      // Missing booking/renter/venue data cannot be repaired by Stripe retry.
+      // Acknowledge the event and retain a clear operational log.
+      console.error(`Non-retryable webhook processing error: ${message}`)
       return Response.json({
         received: true,
         error: 'Webhook processing permanently failed',
       })
     }
 
+    console.error(`Error processing webhook: ${message}`)
     // Successful-payment work is idempotent. A non-2xx response lets Stripe
     // retry transient database and confirmation-email failures.
     return Response.json(

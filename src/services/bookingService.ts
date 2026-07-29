@@ -525,7 +525,16 @@ export class BookingService {
         updated as unknown as Record<string, unknown>
       )
 
-      await this.bookingConfirmationEmailService.sendIfNeeded(bookingId)
+      try {
+        await this.bookingConfirmationEmailService.sendIfNeeded(bookingId)
+      } catch (error) {
+        // The booking is already confirmed. Keep the owner action successful;
+        // the empty sent marker preserves the notification for later recovery.
+        console.error(
+          'Booking confirmation email failed after owner confirmation',
+          error
+        )
+      }
       
       return { ...updated, requiresPayment: false }
     }
