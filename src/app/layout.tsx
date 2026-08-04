@@ -10,7 +10,7 @@ import "./globals.css";
 
 config.autoAddCss = false;
 
-const SHARE_PREVIEW_TEXT = "Community courts, unlocked. Find a court. Book it. Go play.";
+const SHARE_PREVIEW_TEXT = "Community courts, unlocked. Find a court. Book it. Play.";
 const OG_IMAGE_PATH = "/og-default-v3.jpg";
 const GOOGLE_SITE_VERIFICATION = process.env.GOOGLE_SITE_VERIFICATION;
 

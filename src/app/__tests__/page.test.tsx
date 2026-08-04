@@ -138,6 +138,15 @@ describe('HomePage', () => {
     })
   })
 
+  it('uses the shorter final sentence in the hero catchphrase', () => {
+    render(<HomePage />)
+
+    expect(
+      screen.getByRole('heading', { name: /find a court\. book it\. play\./i, level: 1 })
+    ).toBeInTheDocument()
+    expect(screen.queryByText('Go play.')).not.toBeInTheDocument()
+  })
+
   it('preserves mobile and downstream sections while adopting the /4 desktop hero treatment', () => {
     const { container } = render(<HomePage />)
 

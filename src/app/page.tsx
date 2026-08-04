@@ -244,7 +244,7 @@ export default function Home() {
             <h1 className="font-serif text-5xl sm:text-7xl md:text-8xl lg:text-[5.5rem] xl:text-[6rem] leading-[0.9] tracking-tight mb-8 sm:mb-12">
               <span className="block">Find a court.</span>
               <span className="block text-primary-400">Book it.</span>
-              <span className="block italic font-light">Go play.</span>
+              <span className="block italic font-light">Play.</span>
             </h1>
           </div>
 
