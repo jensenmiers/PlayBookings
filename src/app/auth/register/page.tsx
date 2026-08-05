@@ -48,7 +48,7 @@ function RegisterContent() {
       setErrorMessage(null)
       setInfoMessage(null)
 
-      posthog.capture('user_signed_up', { method: 'google', is_host_signup: isHostSignup })
+      posthog.capture('signup_started', { method: 'google', is_host_signup: isHostSignup })
       navigateToUrl(buildAuthInitiationPath({
         returnTo,
         intent,
@@ -78,6 +78,7 @@ function RegisterContent() {
 
     try {
       setEmailLoading(true)
+      posthog.capture('signup_started', { method: 'email', is_host_signup: isHostSignup })
       const fullName = parsed.data.name.trim()
       const [firstName = '', ...lastNameParts] = fullName.split(/\s+/)
       const lastName = lastNameParts.join(' ')
