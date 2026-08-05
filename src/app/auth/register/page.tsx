@@ -48,7 +48,11 @@ function RegisterContent() {
       setErrorMessage(null)
       setInfoMessage(null)
 
-      posthog.capture('signup_started', { method: 'google', is_host_signup: isHostSignup })
+      posthog.capture(
+        'signup_started',
+        { method: 'google', is_host_signup: isHostSignup },
+        { send_instantly: true, transport: 'sendBeacon' }
+      )
       navigateToUrl(buildAuthInitiationPath({
         returnTo,
         intent,
