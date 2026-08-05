@@ -76,6 +76,9 @@ describe('RegisterPage', () => {
     expect(mockCapture).toHaveBeenCalledWith('signup_started', {
       method: 'google',
       is_host_signup: true,
+    }, {
+      send_instantly: true,
+      transport: 'sendBeacon',
     })
     expect(mockCapture).not.toHaveBeenCalledWith(
       'user_signed_up',
