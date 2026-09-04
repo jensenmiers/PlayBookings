@@ -139,6 +139,14 @@ export class AvailabilityService {
     } = {}
   ) {}
 
+  async getPublishedThrough(venueId: string): Promise<string | null> {
+    const supabase = await (this.options.getClient?.() || createClient())
+    const { data, error } = await supabase.from('slot_instances').select('date').eq('venue_id', venueId)
+      .eq('is_active', true).order('date', { ascending: false }).limit(1)
+    if (error) throw new Error('Failed to load the published schedule')
+    return data?.[0]?.date ?? null
+  }
+
   /**
    * Get true available slots for a venue within a date range
    * Filters out slots that overlap with existing bookings

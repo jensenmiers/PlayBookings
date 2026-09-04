@@ -31,6 +31,7 @@ jest.mock('@/services/availabilityService', () => ({
     mockAvailabilityServiceCtor(options)
     return {
       getAvailableSlots: (...args: unknown[]) => mockGetAvailableSlots(...args),
+      getPublishedThrough: jest.fn().mockResolvedValue('2026-12-01'),
     }
   }),
 }))
@@ -272,6 +273,7 @@ describe('VenuePage', () => {
     })
 
     const editorial = findVenueDesignEditorial(result)
+    expect(editorial.props.initialPublishedThrough).toBe('2026-12-01')
     expect(editorial.props.initialAvailability).toEqual([
       expect.objectContaining({
         date: '2026-04-13',
@@ -280,7 +282,7 @@ describe('VenuePage', () => {
     ])
   })
 
-  it('renders the venue page with empty initial availability when SSR availability loading fails', async () => {
+  it('leaves initial availability unhydrated so the client retries an SSR failure', async () => {
     mockFindVenueBySlug.mockResolvedValue(venueRecord)
     mockGetAvailableSlots.mockRejectedValue(new Error('Availability RPC failed'))
     const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
@@ -291,7 +293,7 @@ describe('VenuePage', () => {
 
     expect(result).toBeDefined()
     const editorial = findVenueDesignEditorial(result)
-    expect(editorial.props.initialAvailability).toEqual([])
+    expect(editorial.props.initialAvailability).toBeUndefined()
     expect(consoleErrorSpy).toHaveBeenCalledWith(
       'Failed to load initial venue availability during SSR:',
       expect.objectContaining({

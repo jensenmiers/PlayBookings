@@ -278,11 +278,11 @@ describe('VenueDesignEditorial photo carousel and lightbox', () => {
     fireEvent.click(images[0])
     expect(screen.getByText('1 / 3')).toBeInTheDocument()
 
-    const nextButton = screen.getByRole('button', { name: /next/i })
+    const nextButton = within(screen.getByRole('dialog')).getByRole('button', { name: /next/i })
     fireEvent.click(nextButton)
     expect(screen.getByText('2 / 3')).toBeInTheDocument()
 
-    const prevButton = screen.getByRole('button', { name: /previous/i })
+    const prevButton = within(screen.getByRole('dialog')).getByRole('button', { name: /previous/i })
     fireEvent.click(prevButton)
     expect(screen.getByText('1 / 3')).toBeInTheDocument()
   })
@@ -325,7 +325,13 @@ describe('VenueDesignEditorial photo carousel and lightbox', () => {
   })
 })
 
-describe('VenueDesignEditorial coming-up pills', () => {
+describe('VenueDesignEditorial availability calendar', () => {
+  it('does not describe a failed availability load as an empty week', () => {
+    mockUseVenueAvailabilityRange.mockReturnValue({ data: null, loading: false, error: 'Network error' })
+    render(<VenueDesignEditorial venue={createMockVenue()} />)
+    expect(within(screen.getByTestId('venue-booking-card')).getByText('Availability could not be loaded')).toBeInTheDocument()
+    expect(screen.queryByText('No availability this week')).not.toBeInTheDocument()
+  })
   beforeEach(() => {
     jest.clearAllMocks()
     jest.useFakeTimers()
@@ -378,48 +384,22 @@ describe('VenueDesignEditorial coming-up pills', () => {
     )
   })
 
-  it('shows 7 day pills and a More dates button; clicking More dates shows calendar', () => {
-    mockUseVenueAvailabilityRange.mockReturnValue({
-      data: [
-        { date: '2026-02-23', start_time: '12:00:00', end_time: '13:00:00', venue_id: 'venue-1', action_type: 'request_private' },
-        { date: '2026-02-24', start_time: '12:00:00', end_time: '13:00:00', venue_id: 'venue-1', action_type: 'request_private' },
-      ],
-      loading: false,
-      error: null,
-    })
-
+  it('renders seven days and loads the next week when navigating', () => {
+    mockUseVenueAvailabilityRange.mockReturnValue({ data: [], loading: false, error: null })
     render(<VenueDesignEditorial venue={createMockVenue()} />)
-
-    // Exactly 7 day pills
-    expect(screen.getAllByRole('button', { name: /coming-up-day/i })).toHaveLength(7)
-    expect(screen.getByText('Today Feb 21')).toBeInTheDocument()
-    expect(screen.getByText('Mon Feb 23')).toBeInTheDocument()
-
-    // More dates buttons exist (mobile + desktop variants)
-    const moreDatesButtons = screen.getAllByRole('button', { name: /more dates/i })
-    expect(moreDatesButtons.length).toBeGreaterThanOrEqual(1)
-
-    // Click opens a calendar
-    fireEvent.click(moreDatesButtons[0])
-    expect(document.querySelector('[data-slot="calendar"]')).toBeInTheDocument()
-
-    // Still 7 pills (no expansion to 14)
-    expect(screen.getAllByRole('button', { name: /coming-up-day/i })).toHaveLength(7)
+    expect(screen.getByRole('heading', { name: 'Availability' })).toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: /View .*February/ })).toHaveLength(7)
+    fireEvent.click(screen.getByRole('button', { name: 'Next seven days' }))
+    expect(mockUseVenueAvailabilityRange).toHaveBeenCalledWith('venue-1', '2026-02-28', '2026-03-06', expect.any(Object))
   })
 
-  it('renders zero-slot days as disabled pills', () => {
-    mockUseVenueAvailabilityRange.mockReturnValue({
-      data: [
-        { date: '2026-02-23', start_time: '12:00:00', end_time: '13:00:00', venue_id: 'venue-1', action_type: 'request_private' },
-      ],
-      loading: false,
-      error: null,
-    })
-
+  it('allows viewing an empty day on mobile', () => {
+    mockUseVenueAvailabilityRange.mockReturnValue({ data: [], loading: false, error: null })
     render(<VenueDesignEditorial venue={createMockVenue()} />)
-
-    expect(screen.getByRole('button', { name: 'coming-up-day-2026-02-22' })).toBeDisabled()
-    expect(screen.getByRole('button', { name: 'coming-up-day-2026-02-23' })).toBeEnabled()
+    const day = screen.getByRole('button', { name: 'View Sunday, February 22' })
+    expect(day).toBeEnabled()
+    fireEvent.click(day)
+    expect(day).toHaveAttribute('aria-pressed', 'true')
   })
 
   it('keeps an exact top-of-hour slot bookable for today', () => {
@@ -436,7 +416,7 @@ describe('VenueDesignEditorial coming-up pills', () => {
     expect(screen.getByText(/Today Feb 21\s*·\s*12:00 PM - 1:00 PM/)).toBeInTheDocument()
   })
 
-  it('does not apply an extra client-side top-of-hour cutoff to same-day slots', () => {
+  it('removes stale slots that have already started', () => {
     mockUseVenueAvailabilityRange.mockReturnValue({
       data: [
         { date: '2026-02-21', start_time: '11:00:00', end_time: '12:00:00', venue_id: 'venue-1', action_type: 'request_private' },
@@ -447,7 +427,7 @@ describe('VenueDesignEditorial coming-up pills', () => {
 
     render(<VenueDesignEditorial venue={createMockVenue()} />)
 
-    expect(screen.getByText(/Today Feb 21\s*·\s*11:00 AM - 12:00 PM/)).toBeInTheDocument()
+    expect(screen.queryByText(/Today Feb 21\s*·\s*11:00 AM - 12:00 PM/)).not.toBeInTheDocument()
   })
 
   it('shows Host Approval with a clock icon for request slots', () => {

@@ -352,9 +352,13 @@ export function useVenueAvailabilityRange(
   dateTo: string | null,
   options?: {
     initialData?: ComputedAvailabilitySlot[] | null
+    initialPublishedThrough?: string | null
   }
 ) {
-  const [state, setState] = useState<UseAsyncState<ComputedAvailabilitySlot[]>>({
+  const rangeKey = buildAvailabilityRangeKey(venueId, dateFrom, dateTo)
+  const [state, setState] = useState<UseAsyncState<ComputedAvailabilitySlot[]> & { rangeKey: string | null; publishedThrough?: string | null }>({
+    rangeKey,
+    publishedThrough: options?.initialPublishedThrough,
     data: options?.initialData ?? null,
     loading: options?.initialData ? false : true,
     error: null,
@@ -364,15 +368,21 @@ export function useVenueAvailabilityRange(
   )
   const initialHydrationSkipConsumedRef = useRef(false)
 
+  const requestVersion = useRef(0)
+
   const fetchAvailabilityRange = useCallback(async () => {
+    const version = ++requestVersion.current
+    const requestKey = buildAvailabilityRangeKey(venueId, dateFrom, dateTo)
     if (!venueId || !dateFrom || !dateTo) {
-      setState({ data: null, loading: false, error: null })
+      setState({ rangeKey: requestKey, data: null, loading: false, error: null })
       return
     }
 
     setState((prev) => ({
-      ...prev,
-      loading: prev.data ? false : true,
+      rangeKey: requestKey,
+      data: prev.rangeKey === requestKey ? prev.data : null,
+      publishedThrough: prev.rangeKey === requestKey ? prev.publishedThrough : null,
+      loading: prev.rangeKey !== requestKey || !prev.data,
       error: null,
     }))
     try {
@@ -388,20 +398,25 @@ export function useVenueAvailabilityRange(
         throw new Error(result.error?.message || 'Failed to fetch availability')
       }
 
-      setState({ data: result.data || [], loading: false, error: null })
+      if (version !== requestVersion.current) return
+      setState({ rangeKey: requestKey, data: result.data || [], publishedThrough: result.published_through ?? null, loading: false, error: null })
     } catch (error) {
+      if (version !== requestVersion.current) return
       console.error('Availability range fetch error:', error)
       const message = error instanceof Error ? error.message : 'Failed to fetch availability'
       setState((prev) => {
-        if (prev.data) {
+        if (prev.rangeKey === requestKey && prev.data) {
           return {
+            rangeKey: requestKey,
             data: prev.data,
+            publishedThrough: prev.publishedThrough,
             loading: false,
             error: null,
           }
         }
 
         return {
+          rangeKey: requestKey,
           data: null,
           loading: false,
           error: message,
@@ -423,6 +438,7 @@ export function useVenueAvailabilityRange(
     }
 
     void fetchAvailabilityRange()
+    return () => { requestVersion.current += 1 }
   }, [fetchAvailabilityRange, venueId, dateFrom, dateTo])
 
   // Refetch on window focus (visibility change)
@@ -440,7 +456,10 @@ export function useVenueAvailabilityRange(
   }, [fetchAvailabilityRange, venueId, dateFrom, dateTo])
 
   return {
-    ...state,
+    data: state.rangeKey === rangeKey ? state.data : null,
+    loading: state.rangeKey === rangeKey ? state.loading : Boolean(rangeKey),
+    error: state.rangeKey === rangeKey ? state.error : null,
+    publishedThrough: state.rangeKey === rangeKey ? state.publishedThrough : null,
     refetch: fetchAvailabilityRange,
   }
 }
